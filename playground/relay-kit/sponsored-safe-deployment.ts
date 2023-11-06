@@ -1,3 +1,4 @@
+import { GelatoRelay, SponsoredCallRequest } from '@gelatonetwork/relay-sdk'
 import {
   EthersAdapter,
   getSafeContract,
@@ -6,15 +7,12 @@ import {
   PredictedSafeProps,
   predictSafeAddress
 } from '@safe-global/protocol-kit'
-import AccountAbstraction, {
-  AccountAbstractionConfig
-} from '@safe-global/account-abstraction-kit-poc'
-import { GelatoRelayPack } from '@safe-global/relay-kit'
-import { MetaTransactionOptions, OperationType } from '@safe-global/safe-core-sdk-types'
+import { OperationType } from '@safe-global/safe-core-sdk-types'
 import { FireblocksWeb3Provider, ChainId, ApiBaseUrl } from '@fireblocks/fireblocks-web3-provider'
 import { ethers } from 'ethers'
 import { configDotenv } from 'dotenv'
 configDotenv()
+
 // Fund the 1Balance account that will sponsor the transaction and get the API key:
 // https://relay.gelato.network/
 
@@ -23,18 +21,6 @@ configDotenv()
 
 // Check the status of a transaction after it is executed:
 // https://goerli.etherscan.io/tx/<TRANSACTION_HASH>
-
-interface Config {
-  RPC_URL: string
-  TX_SERVICE_URL: string
-  RELAY_API_KEY: string
-}
-
-const config: Config = {
-  RPC_URL: String(process.env.ALCHEMY_API_KEY),
-  TX_SERVICE_URL: 'https://safe-transaction-goerli.safe.global/', // Check https://docs.safe.global/safe-core-api/available-services
-  RELAY_API_KEY: String(process.env.GELATO_RELAY_API_KEY)
-}
 
 const eip1193Provider = new FireblocksWeb3Provider({
   privateKey: String(process.env.FIREBLOCKS_API_PRIVATE_KEY_PATH),
@@ -52,18 +38,6 @@ async function main() {
 
   const provider = new ethers.providers.Web3Provider(eip1193Provider)
   const signer = provider.getSigner()
-
-  const relayPack = new GelatoRelayPack(config.RELAY_API_KEY)
-
-  const safeAccountAbstraction = new AccountAbstraction(signer)
-  const sdkConfig: AccountAbstractionConfig = {
-    relayPack
-  }
-  await safeAccountAbstraction.init(sdkConfig)
-
-  const getEstimateFee = await relayPack.getEstimateFee(5, '10000000')
-
-  console.log('getEstimateFee: ', getEstimateFee)
 
   // Create EthAdapter instance
   const ethAdapter = new EthersAdapter({
@@ -102,9 +76,6 @@ async function main() {
   })
   console.log('predictedSafeAddress: ', predictedSafeAddress)
 
-  const isSafeDeployed = await safeAccountAbstraction.isSafeDeployed()
-  console.log({ isSafeDeployed })
-
   // we use the SafeProxyFactory.sol contract, see: https://github.com/safe-global/safe-contracts/blob/main/contracts/proxies/SafeProxyFactory.sol
   const safeProxyFactoryContract = await getProxyFactoryContract({
     ethAdapter,
@@ -124,7 +95,6 @@ async function main() {
 
   const safeDeployTransactionData = [
     {
-      // ...transactionOptions, // optional transaction options like from, gasLimit, gasPrice...
       to: safeProxyFactoryContract.getAddress(),
       value: '0',
       // we use the createProxyWithNonce method to create the Safe in a deterministic address, see: https://github.com/safe-global/safe-contracts/blob/main/contracts/proxies/SafeProxyFactory.sol#L52
@@ -133,19 +103,28 @@ async function main() {
         initializer, // call to the setup method to set the threshold & owners of the new Safe
         saltNonce
       ]),
-      operation: OperationType.DelegateCall,
+      operation: OperationType.Call,
       nonce: 2
     }
   ]
 
-  console.log('safeDeployTransactionData: ', safeDeployTransactionData)
+  const chainId = BigInt((await provider.getNetwork()).chainId)
 
-  const options: MetaTransactionOptions = {
-    isSponsored: true
+  // Setup relay & request
+
+  const relay = new GelatoRelay()
+  const request: SponsoredCallRequest = {
+    chainId,
+    target: '0xa6B71E26C5e0845f74c812102Ca7114b6a896AB2',
+    data: safeDeployTransactionData[0].data as string
   }
 
-  const response = await safeAccountAbstraction.relayTransaction(safeDeployTransactionData, options)
-  console.log({ GelatoTaskId: response })
+  // Without a specific API key, the relay request will fail!
+  // Go to https://relay.gelato.network to get a testnet API key with 1Balance.
+  // Send a relay request using Gelato Relay!
+  const response = await relay.sponsoredCall(request, process.env.GELATO_RELAY_API_KEY as string)
+
+  console.log(`https://relay.gelato.digital/tasks/status/${response.taskId}`)
 }
 
 main()

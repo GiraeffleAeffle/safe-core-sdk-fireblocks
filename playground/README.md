@@ -52,7 +52,7 @@ yarn play relay-paid-transaction
 In case you want to execute the transaction via a transaction relay, this script allows to to that, where the fees are extracted from a third party account balance that sponsors the transaction:
 
 ```bash
-yarn play relay-sponsored-transaction
+yarn play relay-safe-deployment
 ```
 
 #### Generate a custon Safe address
