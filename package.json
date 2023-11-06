@@ -8,7 +8,7 @@
     "lint:check": "eslint './packages/**/*.{js,jsx,ts,tsx}'",
     "test": "FORCE_COLOR=1 lerna run test --stream",
     "test:ci": "FORCE_COLOR=1 lerna run test:ci --stream",
-    "play": "ts-node ./playground/config/run.ts",
+    "play": "ts-node ./playground/config/run.ts ",
     "format": "lerna run format && prettier --write \"playground/**/*.ts\"",
     "prepare": "husky install"
   },
@@ -46,5 +46,8 @@
     "./packages/**/*.{json,md}": [
       "prettier --write"
     ]
+  },
+  "dependencies": {
+    "@fireblocks/fireblocks-web3-provider": "^1.2.5"
   }
 }

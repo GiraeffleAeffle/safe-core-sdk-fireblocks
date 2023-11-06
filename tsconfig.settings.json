@@ -1,5 +1,8 @@
 {
   "compilerOptions": {
+    "lib": [
+      "ES2021", "ESNext"
+    ],
     "target": "ES2021" /* Specify ECMAScript target version: 'ES5' (default), 'ES2019', 'ES2020', 'ES2021', 'ES2022', 'ES2023' or 'ESNEXT'. */,
     "module": "CommonJS" /* Specify module code generation: 'none', 'commonjs', 'amd', 'system', 'umd', 'es2015', 'es2020', or 'ESNext'. */,
     "allowJs": false /* Allow javascript files to be compiled. */,

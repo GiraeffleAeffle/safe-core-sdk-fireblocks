@@ -1,5 +1,8 @@
-import { SafeAccountConfig, SafeFactory } from '@safe-global/protocol-kit'
-import { EthersAdapter } from '@safe-global/protocol-kit'
+import {
+  SafeAccountConfig,
+  SafeFactory,
+  EthersAdapter
+} from '@safe-global/protocol-kit'
 import { ethers } from 'ethers'
 
 // This file can be used to play around with the Safe Core SDK
@@ -15,12 +18,12 @@ interface Config {
 }
 
 const config: Config = {
-  RPC_URL: 'https://goerli.infura.io/v3/<INFURA_KEY>',
-  DEPLOYER_ADDRESS_PRIVATE_KEY: '<DEPLOYER_PRIVATE_KEY>',
+  RPC_URL: 'https://eth-goerli.g.alchemy.com/v2/njApFwEyNNu1yPzKLGPgrNxpE_T8TJVv',
+  DEPLOYER_ADDRESS_PRIVATE_KEY: '',
   DEPLOY_SAFE: {
-    OWNERS: ['<OWNER_ADDRESS_1>', '<OWNER_ADDRESS_2>'],
+    OWNERS: ['0xB7eA27CCC3050aC03E60d89f56b3A836c816ACcE'],
     THRESHOLD: 1, // <SAFE_THRESHOLD>
-    SALT_NONCE: '<SALT_NONCE_NUMBER>'
+    SALT_NONCE: '1'
   }
 }
 
@@ -63,7 +66,7 @@ async function main() {
     callback
   })
 
-  console.log('Deployed Safe:', safe.getAddress())
+  console.log('Deployed Safe:', await safe.getAddress())
 }
 
 main()
