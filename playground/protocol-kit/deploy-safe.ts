@@ -18,7 +18,7 @@ interface Config {
 }
 
 const config: Config = {
-  RPC_URL: 'https://eth-goerli.g.alchemy.com/v2/njApFwEyNNu1yPzKLGPgrNxpE_T8TJVv',
+  RPC_URL: String(process.env.ALCHEMY_API_KEY),
   DEPLOYER_ADDRESS_PRIVATE_KEY: '',
   DEPLOY_SAFE: {
     OWNERS: ['0xB7eA27CCC3050aC03E60d89f56b3A836c816ACcE'],

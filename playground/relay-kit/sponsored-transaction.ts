@@ -3,13 +3,14 @@ import {
   getSafeContract,
   getProxyFactoryContract,
   encodeSetupCallData,
-  PredictedSafeProps
+  PredictedSafeProps,
+  predictSafeAddress
 } from '@safe-global/protocol-kit'
 import AccountAbstraction, {
   AccountAbstractionConfig
 } from '@safe-global/account-abstraction-kit-poc'
 import { GelatoRelayPack } from '@safe-global/relay-kit'
-import { MetaTransactionOptions } from '@safe-global/safe-core-sdk-types'
+import { MetaTransactionOptions, OperationType } from '@safe-global/safe-core-sdk-types'
 import { FireblocksWeb3Provider, ChainId, ApiBaseUrl } from '@fireblocks/fireblocks-web3-provider'
 import { ethers } from 'ethers'
 import { configDotenv } from 'dotenv'
@@ -25,16 +26,14 @@ configDotenv()
 
 interface Config {
   RPC_URL: string
-  SAFE_ADDRESS: string
   TX_SERVICE_URL: string
   RELAY_API_KEY: string
 }
 
 const config: Config = {
-  RPC_URL: 'https://eth-goerli.g.alchemy.com/v2/njApFwEyNNu1yPzKLGPgrNxpE_T8TJVv',
-  SAFE_ADDRESS: '0x386e3Bf19B4eB191f954f6BBc4E388395a8E75A3',
+  RPC_URL: String(process.env.ALCHEMY_API_KEY),
   TX_SERVICE_URL: 'https://safe-transaction-goerli.safe.global/', // Check https://docs.safe.global/safe-core-api/available-services
-  RELAY_API_KEY: ''
+  RELAY_API_KEY: String(process.env.GELATO_RELAY_API_KEY)
 }
 
 const eip1193Provider = new FireblocksWeb3Provider({
@@ -62,15 +61,9 @@ async function main() {
   }
   await safeAccountAbstraction.init(sdkConfig)
 
-  // const contractManager = await new ContractManager().init(safeConfig)
+  const getEstimateFee = await relayPack.getEstimateFee(5, '10000000')
 
-  // Calculate Safe address
-
-  // const predictedSafeAddress = safeAccountAbstraction.getSafeAddress()
-  // console.log({ predictedSafeAddress })
-
-  // const isSafeDeployed = await safeAccountAbstraction.isSafeDeployed()
-  // console.log({ isSafeDeployed })
+  console.log('getEstimateFee: ', getEstimateFee)
 
   // Create EthAdapter instance
   const ethAdapter = new EthersAdapter({
@@ -78,24 +71,39 @@ async function main() {
     signerOrProvider: signer
   })
 
-  const safeVersionDeployed = '1.4.1'
+  const safeVersionDeployed = '1.3.0'
   const safeSingletonContract = await getSafeContract({
     ethAdapter,
     safeVersion: safeVersionDeployed,
     isL1SafeMasterCopy: true
   })
 
-console.log("safeSingletonContract: ", safeSingletonContract)
+  console.log('safeSingletonContract: ', safeSingletonContract)
+  const saltNonce = '2' // uuidv4()
+  const signerAddress = await signer.getAddress()
 
   const predictedSafe: PredictedSafeProps = {
     safeAccountConfig: {
-      owners: [await signer.getAddress()],
+      owners: [signerAddress],
       threshold: 1
     },
     safeDeploymentConfig: {
-      safeVersion: safeVersionDeployed
+      safeVersion: safeVersionDeployed,
+      saltNonce
     }
   }
+
+  console.log('predictedSafe: ', predictedSafe)
+  const predictedSafeAddress = await predictSafeAddress({
+    ethAdapter,
+    safeAccountConfig: predictedSafe.safeAccountConfig,
+    safeDeploymentConfig: predictedSafe.safeDeploymentConfig,
+    isL1SafeMasterCopy: true
+  })
+  console.log('predictedSafeAddress: ', predictedSafeAddress)
+
+  const isSafeDeployed = await safeAccountAbstraction.isSafeDeployed()
+  console.log({ isSafeDeployed })
 
   // we use the SafeProxyFactory.sol contract, see: https://github.com/safe-global/safe-contracts/blob/main/contracts/proxies/SafeProxyFactory.sol
   const safeProxyFactoryContract = await getProxyFactoryContract({
@@ -103,15 +111,16 @@ console.log("safeSingletonContract: ", safeSingletonContract)
     safeVersion: safeVersionDeployed
   })
 
+  console.log('safeProxyFactoryContract: ', safeProxyFactoryContract)
+
   // this is the call to the setup method that sets the threshold & owners of the new Safe, see: https://github.com/safe-global/safe-contracts/blob/main/contracts/Safe.sol#L95
   const initializer = await encodeSetupCallData({
     ethAdapter,
     safeContract: safeSingletonContract,
-    safeAccountConfig: predictedSafe.safeAccountConfig,
-    customContracts:
+    safeAccountConfig: predictedSafe.safeAccountConfig
   })
 
-  const saltNonce = '1'
+  console.log('initializer: ', initializer)
 
   const safeDeployTransactionData = [
     {
@@ -123,37 +132,14 @@ console.log("safeSingletonContract: ", safeSingletonContract)
         safeSingletonContract.getAddress(),
         initializer, // call to the setup method to set the threshold & owners of the new Safe
         saltNonce
-      ])
+      ]),
+      operation: OperationType.DelegateCall,
+      nonce: 2
     }
   ]
 
-  // Fake on-ramp to fund the Safe
+  console.log('safeDeployTransactionData: ', safeDeployTransactionData)
 
-  // const safeBalance = await provider.getBalance(predictedSafeAddress)
-  // console.log({ safeBalance: ethers.utils.formatEther(safeBalance.toString()) })
-  // if (safeBalance.lt(txConfig.VALUE)) {
-  //   const fakeOnRampSigner = new ethers.Wallet(mockOnRampConfig.PRIVATE_KEY, provider)
-  //   const onRampResponse = await fakeOnRampSigner.sendTransaction({
-  //     to: predictedSafeAddress,
-  //     value: txConfig.VALUE
-  //   })
-  //   console.log(`Funding the Safe with ${ethers.utils.formatEther(txConfig.VALUE.toString())} ETH`)
-  //   await onRampResponse.wait()
-
-  //   const safeBalanceAfter = await provider.getBalance(predictedSafeAddress)
-  //   console.log({ safeBalance: ethers.utils.formatEther(safeBalanceAfter.toString()) })
-  // }
-
-  // Relay the transaction
-
-  // const safeTransactions: MetaTransactionData[] = [
-  //   {
-  //     to: txConfig.TO,
-  //     data: txConfig.DATA,
-  //     value: txConfig.VALUE,
-  //     operation: OperationType.Call
-  //   }
-  // ]
   const options: MetaTransactionOptions = {
     isSponsored: true
   }
