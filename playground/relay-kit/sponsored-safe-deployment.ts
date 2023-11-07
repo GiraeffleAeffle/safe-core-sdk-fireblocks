@@ -7,7 +7,6 @@ import {
   PredictedSafeProps,
   predictSafeAddress
 } from '@safe-global/protocol-kit'
-import { OperationType } from '@safe-global/safe-core-sdk-types'
 import { FireblocksWeb3Provider, ChainId, ApiBaseUrl } from '@fireblocks/fireblocks-web3-provider'
 import { ethers } from 'ethers'
 import { configDotenv } from 'dotenv'
@@ -96,15 +95,12 @@ async function main() {
   const safeDeployTransactionData = [
     {
       to: safeProxyFactoryContract.getAddress(),
-      value: '0',
       // we use the createProxyWithNonce method to create the Safe in a deterministic address, see: https://github.com/safe-global/safe-contracts/blob/main/contracts/proxies/SafeProxyFactory.sol#L52
       data: safeProxyFactoryContract.encode('createProxyWithNonce', [
         safeSingletonContract.getAddress(),
         initializer, // call to the setup method to set the threshold & owners of the new Safe
         saltNonce
-      ]),
-      operation: OperationType.Call,
-      nonce: 2
+      ])
     }
   ]
 
