@@ -13,7 +13,8 @@ const playgroundApiKitPaths = {
 }
 const playgroundRelayKitPaths = {
   'relay-paid-transaction': 'relay-kit/paid-transaction',
-  'relay-sponsored-safe-deployment': 'relay-kit/sponsored-safe-deployment'
+  'relay-sponsored-safe-deployment': 'relay-kit/sponsored-safe-deployment',
+  'relay-sponsored-transaction': 'relay-kit/sponsored-transaction'
 }
 
 const path =
