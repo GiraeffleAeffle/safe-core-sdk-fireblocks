@@ -32,16 +32,15 @@ async function main() {
   const provider = new ethers.providers.Web3Provider(eip1193Provider)
   const signer = provider.getSigner()
 
-  const myToken = '0xd6981777F89aCD65bcD4deEE1EF78f40331AF80c'
+  const myToken = '0x42441776d0e60fd8258e587B04738BD095569B1C'
   const amount = BigInt(0xde0b6b3a7640000) // 1000000000000000000 wei
   const contract = new ethers.Contract(myToken, abi, signer)
 
   // Create transaction
   const safeTransactionData: SafeTransactionDataPartial = {
     to: contract.address,
-    data: contract.interface.encodeFunctionData('transferFrom', [
+    data: contract.interface.encodeFunctionData('mint', [
       '0x013f3BA9a4D4744A72CD33d1c1F8107D236c6bcb',
-      '0x1853159F242AcAae47a833a2e2c24DAf9A04AaDF',
       amount
     ]),
     value: '0'
@@ -58,13 +57,12 @@ async function main() {
     data: safeTransactionData.data as string
   }
 
+  console.log('request: ', request)
+
   // Without a specific API key, the relay request will fail!
   // Go to https://relay.gelato.network to get a testnet API key with 1Balance.
   // Send a relay request using Gelato Relay!
-  const response = await relay.sponsoredCall(
-    request,
-    process.env.SAFE_ENABLED_GELATO_RELAY_API_KEY as string
-  )
+  const response = await relay.sponsoredCall(request, process.env.GELATO_RELAY_API_KEY as string)
 
   console.log(`https://relay.gelato.digital/tasks/status/${response.taskId}`)
 }

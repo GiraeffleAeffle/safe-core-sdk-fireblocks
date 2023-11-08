@@ -10,15 +10,11 @@ configDotenv()
 // This file can be used to play around with the Safe Core SDK
 
 interface Config {
-  RPC_URL: string
-  SIGNER_ADDRESS_PRIVATE_KEY: string
   SAFE_ADDRESS: string
   TX_SERVICE_URL: string
 }
 
 const config: Config = {
-  RPC_URL: String(process.env.ALCHEMY_API_KEY),
-  SIGNER_ADDRESS_PRIVATE_KEY: '',
   SAFE_ADDRESS: '0x386e3Bf19B4eB191f954f6BBc4E388395a8E75A3',
   TX_SERVICE_URL: 'https://safe-transaction-goerli.safe.global/' // Check https://docs.safe.global/safe-core-api/available-services
 }
